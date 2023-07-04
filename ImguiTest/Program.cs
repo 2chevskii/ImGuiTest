@@ -51,6 +51,10 @@ public class Program
 
     private static bool _frameStarted, _showDemoWindow;
 
+    public static float FrameTime;
+
+    public static float FPS => 1f / FrameTime;
+
     private static ResourceFactory ResourceFactory => _gd.ResourceFactory;
 
     private static void Initialize()
@@ -128,12 +132,20 @@ public class Program
         );
         _projMatrixBuffer.Name = "imgui.net_projbuffer";
 
-        _vertexShader = ResourceFactory.CreateShader(
-            new ShaderDescription(ShaderStages.Vertex, Shaders.VertexShaderBytes, "main")
-        );
-        _fragmentShader = ResourceFactory.CreateShader(
+        // _vertexShader = ResourceFactory.CreateShader(
+        //     new ShaderDescription(ShaderStages.Vertex, Shaders.VertexShaderBytes, "main")
+        // );
+        // _fragmentShader = ResourceFactory.CreateShader(
+        //     new ShaderDescription(ShaderStages.Fragment, Shaders.FragmentShaderBytes, "main")
+        // );
+
+        var shaders = ResourceFactory.CreateFromSpirv(
+            new ShaderDescription(ShaderStages.Vertex, Shaders.VertexShaderBytes, "main"),
             new ShaderDescription(ShaderStages.Fragment, Shaders.FragmentShaderBytes, "main")
         );
+
+        _vertexShader   = shaders[0];
+        _fragmentShader = shaders[1];
 
         var vertexLayouts = new[] {
             new VertexLayoutDescription(
@@ -199,6 +211,7 @@ public class Program
         while (true)
         {
             deltaTime = CalculateDeltaTime(sw.ElapsedTicks);
+            FrameTime = deltaTime;
             sw.Restart();
 
             var inputSnapshot = _window.PumpEvents();
@@ -268,11 +281,26 @@ public class Program
         if (ImGui.Button("Exit"))
             _shouldExit = true;
         
-        ImGui.Begin("Some cool window");
-        ImGui.SetWindowSize(new Vector2(150), ImGuiCond.Appearing);
-        ImGui.ColorPicker3("Take color yo", ref _colorPickerValue);
+        ImGui.Begin("FPS Counter");
+        ImGui.Text($"FrameTime: {FrameTime * 1000:0.00}ms");
+        ImGui.Text($"FPS: {FPS:0.00}");
+        ImGui.End();
+
+        ImGui.Begin("Mouse position");
+        var mousePosition = ImGui.GetMousePos().ToString();
+        ImGui.Text("Mouse position: " + mousePosition);
+        ImGui.End();
+
+        ImGui.Begin("Controls window");
+        if ( ImGui.CollapsingHeader("Some collapse") )
+        {
+            ImGui.Checkbox("Collapse check", ref _check);
+        }
+        
         ImGui.End();
     }
+
+    private static bool _check;
 
     static void SetFrameData(float deltaTime)
     {
